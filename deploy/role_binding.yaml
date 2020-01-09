@@ -1,0 +1,11 @@
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: network-metrics
+subjects:
+- kind: ServiceAccount
+  name: network-metrics
+roleRef:
+  kind: Role
+  name: network-metrics
+  apiGroup: rbac.authorization.k8s.io

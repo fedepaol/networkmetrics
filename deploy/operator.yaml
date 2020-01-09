@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: network-metrics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: network-metrics
+  template:
+    metadata:
+      labels:
+        name: network-metrics
+    spec:
+      serviceAccountName: network-metrics
+      containers:
+        - name: network-metrics
+          # Replace this with the built image name
+          image: REPLACE_IMAGE
+          command:
+          - network-metrics
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "network-metrics"
