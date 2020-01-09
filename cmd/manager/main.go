@@ -4,10 +4,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"runtime"
 
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	podmetrics "github.com/fedepaol/network-metrics/pkg/metrics"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 
@@ -150,6 +154,8 @@ func main() {
 		log.Error(err, "Manager exited non-zero")
 		os.Exit(1)
 	}
+
+	serveNetworkMetrics(":9091")
 }
 
 // serveCRMetrics gets the Operator/CustomResource GVKs and generates metrics based on those types.
@@ -174,4 +180,11 @@ func serveCRMetrics(cfg *rest.Config) error {
 		return err
 	}
 	return nil
+}
+
+func serveNetworkMetrics(metricsAddress string) {
+	prometheus.MustRegister(podmetrics.NetAttachDefPerPod)
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+	}()
 }
