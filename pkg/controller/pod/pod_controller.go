@@ -78,13 +78,11 @@ func (r *ReconcilePod) Reconcile(request reconcile.Request) (reconcile.Result, e
 	reqLogger.Info("Reconciling Pod")
 
 	// Fetch the Pod instance
-	instance := &corev1.Pod{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	pod := &corev1.Pod{}
+	err := r.client.Get(context.TODO(), request.NamespacedName, pod)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
+			// TODO Handle deletion here
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
@@ -92,11 +90,11 @@ func (r *ReconcilePod) Reconcile(request reconcile.Request) (reconcile.Result, e
 	}
 
 	// Pod already exists - don't requeue
-	reqLogger.Info("Received pod", instance.Name)
+	reqLogger.Info("Received pod", "name", pod.Name)
 
 	// TODO here it could happen that we receive an update of a pod. We want to track only additions /
 	// deletions of pods, so a map would help
-	podmetrics.UpdateNetAttachDefInstanceMetrics(instance.Name, instance.Namespace, "foo", "bar", true)
+	podmetrics.UpdateNetAttachDefInstanceMetrics(pod.Name, pod.Namespace, "foo", "bar", true)
 
 	return reconcile.Result{}, nil
 }
