@@ -27,6 +27,7 @@ var log = logf.Log.WithName("controller_pod")
 // Add creates a new Pod Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
+	log.Info("Adding pod controller")
 	return add(mgr, newReconciler(mgr))
 }
 
@@ -49,6 +50,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
+	log.Info("Watching pods")
 
 	return nil
 }
