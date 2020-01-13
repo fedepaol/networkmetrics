@@ -8,6 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// PodNetworkStatus is the name of the network status annotation
 const PodNetworkStatus = "k8s.v1.cni.cncf.io/networks-status"
 
 type networkStatus struct {

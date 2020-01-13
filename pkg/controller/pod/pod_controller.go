@@ -2,6 +2,7 @@ package pod
 
 import (
 	"context"
+	"fmt"
 
 	podmetrics "github.com/fedepaol/network-metrics/pkg/metrics"
 
@@ -19,10 +20,12 @@ import (
 
 var log = logf.Log.WithName("controller_pod")
 
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
+type podAction int
+
+const (
+	adding podAction = iota
+	deleting
+)
 
 // Add creates a new Pod Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -66,13 +69,6 @@ type ReconcilePod struct {
 	scheme *runtime.Scheme
 }
 
-// Reconcile reads that state of the cluster for a Pod object and makes changes based on the state read
-// and what is in the Pod.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
-// Note:
-// The Controller will requeue the Request to be processed again if the returned error is non-nil or
-// Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcilePod) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Pod")
@@ -82,7 +78,7 @@ func (r *ReconcilePod) Reconcile(request reconcile.Request) (reconcile.Result, e
 	err := r.client.Get(context.TODO(), request.NamespacedName, pod)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// TODO Handle deletion here
+			publishMetricsForPod(pod, deleting)
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
@@ -92,9 +88,27 @@ func (r *ReconcilePod) Reconcile(request reconcile.Request) (reconcile.Result, e
 	// Pod already exists - don't requeue
 	reqLogger.Info("Received pod", "name", pod.Name)
 
+	var podAction = adding
+	if pod.DeletionTimestamp != nil {
+		reqLogger.Info("Pod deleted", "name", pod.Name)
+		podAction = deleting
+	}
+
+	publishMetricsForPod(pod, podAction)
+	return reconcile.Result{}, nil
+}
+
+func publishMetricsForPod(pod *corev1.Pod, action podAction) error {
 	// TODO here it could happen that we receive an update of a pod. We want to track only additions /
 	// deletions of pods, so a map would help
-	podmetrics.UpdateNetAttachDefInstanceMetrics(pod.Name, pod.Namespace, "foo", "bar", true)
 
-	return reconcile.Result{}, nil
+	networks, err := Networks(pod)
+	if err != nil {
+		return fmt.Errorf("Failed to get networks out of pod %s - %s", pod.Namespace, pod.Name)
+	}
+
+	for _, n := range networks {
+		podmetrics.UpdateNetAttachDefInstanceMetrics(n.PodName, n.Namespace, n.Interface, n.NetworkName, true)
+	}
+	return nil
 }
