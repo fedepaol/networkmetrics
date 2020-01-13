@@ -63,6 +63,31 @@ var podNetworkTests = []struct {
 			},
 		},
 	},
+	{"multipleinterfaces",
+		&corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "MultiplePodName",
+				Namespace: "MultiplePodNameSpace",
+				Annotations: map[string]string{
+					pod.PodNetworkStatus: multipleNetworkAnnotation,
+				},
+			},
+		},
+		[]pod.Network{
+			pod.Network{
+				PodName:     "MultiplePodName",
+				Namespace:   "MultiplePodNameSpace",
+				Interface:   "eth0",
+				NetworkName: "kindnet",
+			},
+			pod.Network{
+				PodName:     "MultiplePodName",
+				Namespace:   "MultiplePodNameSpace",
+				Interface:   "net1",
+				NetworkName: "macvlan-conf",
+			},
+		},
+	},
 }
 
 func TestPodToNetwork(t *testing.T) {
@@ -73,7 +98,7 @@ func TestPodToNetwork(t *testing.T) {
 			continue
 		}
 		if len(networks) != len(tst.res) {
-			t.Error(tst.testName, "Different len for networks")
+			t.Error(tst.testName, "len(networks) != len(tst.res)", len(networks), len(tst.res))
 			continue
 		}
 		if !reflect.DeepEqual(networks, tst.res) {
