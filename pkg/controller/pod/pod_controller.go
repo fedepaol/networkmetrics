@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	podmetrics "github.com/fedepaol/network-metrics/pkg/metrics"
+	"github.com/fedepaol/network-metrics/pkg/podmetrics"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -69,6 +69,7 @@ type ReconcilePod struct {
 	scheme *runtime.Scheme
 }
 
+// Reconcile is the pod's controller reconcile loop
 func (r *ReconcilePod) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling Pod")
@@ -85,7 +86,6 @@ func (r *ReconcilePod) Reconcile(request reconcile.Request) (reconcile.Result, e
 		return reconcile.Result{}, err
 	}
 
-	// Pod already exists - don't requeue
 	reqLogger.Info("Received pod", "name", pod.Name)
 
 	var podAction = adding
@@ -108,7 +108,11 @@ func publishMetricsForPod(pod *corev1.Pod, action podAction) error {
 	}
 
 	for _, n := range networks {
-		podmetrics.UpdateNetAttachDefInstanceMetrics(n.PodName, n.Namespace, n.Interface, n.NetworkName, true)
+		if action == adding {
+			podmetrics.UpdateNetAttachDefInstanceMetrics(n.PodName, n.Namespace, n.Interface, n.NetworkName, podmetrics.Adding)
+		} else {
+			podmetrics.UpdateNetAttachDefInstanceMetrics(n.PodName, n.Namespace, n.Interface, n.NetworkName, podmetrics.Deleting)
+		}
 	}
 	return nil
 }
